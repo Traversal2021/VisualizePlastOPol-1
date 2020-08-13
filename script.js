@@ -83,7 +83,7 @@ let allData = results.data;
 			let parsedPoint = parseWktPoint(allData[i][125]);
 			let convertedPoint = undefined;
 
-			let urlResult = "http://epsg.io/trans?x=" + parsedPoint[0] + "&y=" + parsedPoint[1] + "&z=0&s_srs=32633&t_srs=4326";
+			let urlResult = "https://epsg.io/trans?x=" + parsedPoint[0] + "&y=" + parsedPoint[1] + "&z=0&s_srs=32633&t_srs=4326";
 			let convertedCoordinates = undefined;
 
 			var xhttp = new XMLHttpRequest();
