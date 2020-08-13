@@ -82,16 +82,17 @@ let allData = results.data;
 
 			let parsedPoint = parseWktPoint(allData[i][125]);
 			let convertedPoint = undefined;
-
-			let urlResult = "https://epsg.io/trans?x=" + parsedPoint[0] + "&y=" + parsedPoint[1] + "&z=0&s_srs=32633&t_srs=4326";
+			let urlResult = "https://twcc.fr/en/ws/?fmt=json&x=" + parsedPoint[0] + "&y=" + parsedPoint[1] + "&in=EPSG%3a32633&out=EPSG%3A4326";
+			//let urlResult = "https://epsg.io/trans?x=" + parsedPoint[0] + "&y=" + parsedPoint[1] + "&z=0&s_srs=32633&t_srs=4326";
 			let convertedCoordinates = undefined;
 
 			var xhttp = new XMLHttpRequest();
 			xhttp.onreadystatechange = function() {
 			    if (this.readyState == 4 && this.status == 200) {
 				JSONtext = xhttp.responseText;
+				//JSONtext = JSONtext.replace("jsonpFunction(","").replace(")","");
 				convertedPoint = JSON.parse(JSONtext);
-				console.log(convertedPoint);
+				console.log(convertedPoint.point);
 				L.marker(convertedPoint, {icon: redIcon}).addTo(wasteMap).bindPopup(currentString);
 			    }
 			};
