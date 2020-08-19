@@ -65,14 +65,14 @@ let allData = results.data;
 	let templateString = "";
 
 	for(let j=0; j<allData[0].length; ++j) {
-		let indexesToAvoid = [0, 2, 4, 5, 6, 7, 8, 9];
+		let indexesToAvoid = [125];
 		if(indexesToAvoid.indexOf(j) == -1) { // if j is not in the array to avoid
 			templateString += allData[0][j] + ": {" + j + "}<br/>";
 		}
 	}
 
 	for(let i=1; i<allData.length; ++i) {
-		if(allData[i][125]!=undefined) {
+		if(allData[i][125]!=undefined && allData[i][17] != "") {
 				let currentString = templateString;
 				for(let k=0; k<allData[i].length; ++k) {
 					let toReplace = "{" + k + "}";
@@ -93,7 +93,15 @@ let allData = results.data;
 
 			let convertedPoint = proj4('EPSG:32633', 'EPSG:4326', parsedPoint);
 
-			L.marker([convertedPoint[1], convertedPoint[0]], {icon: redIcon}).addTo(wasteMap).bindPopup(currentString);
+			if(allData[i][17] < 50) {
+				L.marker([convertedPoint[1], convertedPoint[0]], {icon: greenIcon}).addTo(wasteMap).bindPopup(currentString);
+			}
+			else if(allData[i][17] < 300) {
+				L.marker([convertedPoint[1], convertedPoint[0]], {icon: yellowIcon}).addTo(wasteMap).bindPopup(currentString);
+			}
+			else {
+				L.marker([convertedPoint[1], convertedPoint[0]], {icon: redIcon}).addTo(wasteMap).bindPopup(currentString);
+			}
 			    
 			
 		}
