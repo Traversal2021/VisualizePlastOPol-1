@@ -30,6 +30,7 @@ function allowLoading() { // Source: File API
 }
 
 function showRyddeResultsOnMap(results) {
+
 	var greenIcon = new L.Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-grey.png',
 
@@ -57,7 +58,10 @@ var redIcon = new L.Icon({
   shadowSize: [41, 41]
 });
 
+
+
 let allData = results.data;
+
 	let templateString = "";
 
 	for(let j=0; j<allData[0].length; ++j) {
@@ -81,23 +85,17 @@ let allData = results.data;
 			
 
 			let parsedPoint = parseWktPoint(allData[i][125]);
-			let convertedPoint = undefined;
-			let urlResult = "https://twcc.fr/en/ws/?fmt=json&x=" + parsedPoint[0] + "&y=" + parsedPoint[1] + "&in=EPSG%3a32633&out=EPSG%3A4326";
-			//let urlResult = "https://epsg.io/trans?x=" + parsedPoint[0] + "&y=" + parsedPoint[1] + "&z=0&s_srs=32633&t_srs=4326";
-			let convertedCoordinates = undefined;
+			
+			proj4.defs([
+			['EPSG:32633',
+			'+proj=utm +zone=33 +datum=WGS84 +units=m +no_defs']
+			]);
 
-			var xhttp = new XMLHttpRequest();
-			xhttp.onreadystatechange = function() {
-			    if (this.readyState == 4 && this.status == 200) {
-				JSONtext = xhttp.responseText;
-				//JSONtext = JSONtext.replace("jsonpFunction(","").replace(")","");
-				convertedPoint = JSON.parse(JSONtext);
-				console.log(convertedPoint.point);
-				L.marker(convertedPoint, {icon: redIcon}).addTo(wasteMap).bindPopup(currentString);
-			    }
-			};
-			xhttp.open("GET", urlResult, true);
-			xhttp.send();
+			let convertedPoint = proj4('EPSG:32633', 'EPSG:4326', parsedPoint);
+
+			L.marker([convertedPoint[1], convertedPoint[0]], {icon: redIcon}).addTo(wasteMap).bindPopup(currentString);
+			    
+			
 		}
 	}
 
@@ -175,6 +173,9 @@ function parseWktPoint(stringPoint) {
 	let output = stringPoint.replace("POINT(","");
 	output = output.replace(")","");
 	output = output.split(" ");
+	for(let o=0; o<output.length; ++o) {
+		output[o] = parseFloat(output[o]);
+	}
 	return output;
 }
 
