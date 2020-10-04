@@ -44,7 +44,8 @@ function allowLoading() { // Source: File API
 		.then(data => {
 		Papa.parse(data, {
 			complete: function(results) {
-				showDBResultsOnMap(results);
+				// showDBResultsOnMap(results);
+				createCells();
 			}
 		});
 	});
@@ -226,6 +227,32 @@ function parseWktPoint(stringPoint) {
 	xhttp.send();
 }*/
 
+const createCells = () => {
+	const lat_min = 62.29277009577185, lat_max = 62.86852390984713, lng_min = 6.06296529018893, lng_max = 7.153935062865635;
+
+	const cell_rows = 10, cell_columns = 5;
+
+	const half_cell_height = (lat_max - lat_min)/(2*(cell_rows - 1));
+	const half_cell_width = (lng_max - lng_min)/(2*(cell_columns - 1));
+
+	let lat_point = lat_min;
+	let row_count = 0;
+	while (row_count < cell_rows){
+		let lng_point = lng_min;
+		let column_count = 0;
+		while (column_count < cell_columns) {
+			var bounds = [[lat_point - half_cell_height, lng_point - half_cell_width],
+				[lat_point + half_cell_height, lng_point + half_cell_width]];
+			// create an orange rectangle
+			L.rectangle(bounds, {color: "#ff7800", weight: 1}).addTo(wasteMap);
+			lng_point += 2*half_cell_width;
+			column_count++;
+		}
+		lat_point += 2*half_cell_height;
+		row_count++;
+	}
+};
+
 function showDBResultsOnMap(results) {
 	var greenIcon = new L.Icon({
 		iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
@@ -258,7 +285,7 @@ function showDBResultsOnMap(results) {
 
 	for (let i = 1; i < allData.length; ++i) {
 		if (allData[i][4] !== undefined) {
-			let dataString = `Date: ${allData[i][1]}<br>`;
+			let dataString = `Date: ${allData[i][1]}<br> Lat: ${allData[i][2]}<br> Lng: ${allData[i][3]}<br>`;
 
 			if(allData[i][4]<50) {
 				L.marker([allData[i][2], allData[i][3]], {icon: greenIcon}).addTo(wasteMap).bindPopup(dataString);
