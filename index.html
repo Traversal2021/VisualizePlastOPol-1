@@ -18,19 +18,19 @@
 </head>
 <body>
 
-<div class="fileDiv">
-<span>SALT file</span>
-<input type="file" id="salt-selector"><br/>
-<span>Rydde file</span>
-<input type="file" id="rydde-selector"><br>
-<span>MDT file</span>
-<input type="file" id="mdt-selector">
-</div>
+<!--<div class="fileDiv">-->
+<!--<span>SALT file</span>-->
+<!--<input type="file" id="salt-selector"><br/>-->
+<!--<span>Rydde file</span>-->
+<!--<input type="file" id="rydde-selector"><br>-->
+<!--<span>MDT file</span>-->
+<!--<input type="file" id="mdt-selector">-->
+<!--</div>-->
  <div id="wasteMap"></div>
 <script>
 
-// var wasteMap = L.map('wasteMap').setView([65.505, 10.09], 5);
-var wasteMap = L.map('wasteMap').setView([62.4728781,6.1492684], 9); //Alesund
+var wasteMap = L.map('wasteMap').setView([65.505, 10.09], 5);
+// var wasteMap = L.map('wasteMap').setView([62.4728781,6.1492684], 9); //Alesund
 
 
 L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
