@@ -229,41 +229,57 @@ function parseWktPoint(stringPoint) {
 
 const createCells = results => {
 	// const lat_min = 62.29277009577185, lat_max = 62.86852390984713, lng_min = 6.06296529018893, lng_max = 7.153935062865635; //Alesund
-	const lat_min = 67.775, lat_max = 69.35, lng_min = 12.5, lng_max = 16.15; // Lofoten
+	const lat_min = 62, lat_max = 63, lng_min = 5.5, lng_max = 7.5; //Alesund
+	// const lat_min = 67.775, lat_max = 69.35, lng_min = 12.5, lng_max = 16.15; // Lofoten
 	let allData = results.data;
 
-	const cell_rows = 28, cell_columns = 28;
+	const cell_rows = 16, cell_columns = 16;
 
-	const half_cell_height = (lat_max - lat_min)/(2*(cell_rows - 1));
-	const half_cell_width = (lng_max - lng_min)/(2*(cell_columns - 1));
+	const half_cell_height = (lat_max - lat_min) / (2 * (cell_rows - 1));
+	const half_cell_width = (lng_max - lng_min) / (2 * (cell_columns - 1));
 
-	let lat_point = lat_min;
-	let row_count = 0;
 	let quantity_max = null;
 	let quantity_min = null;
 	let weight_max = null;
 	let weight_min = null;
-	let cells = [];
-	while (row_count < cell_rows){
-		let lng_point = lng_min;
-		let column_count = 0;
-		let inner_cells = [];
-		while (column_count < cell_columns) {
-			let lat_0 = lat_point - half_cell_height;
-			let lng_0 = lng_point - half_cell_width;
-			let lat_1 = lat_point + half_cell_height;
-			let lng_1 = lng_point + half_cell_width;
-			let bounds = [[lat_0, lng_0], [lat_1, lng_1]];
+	let cells_collection = [];
+	let start_date = new Date(2019, 11, 31, 23, 59, 59);
+	let interval = 7;
+	let tomorrow = new Date();
+	tomorrow.setDate(tomorrow.getDate()+1);
+	tomorrow.setHours(0,0,0,0);
+	while (start_date < tomorrow) {
+		let end_date = new Date(start_date);
+		end_date.setDate(end_date.getDate() + interval);
+		let lat_point = lat_min;
+		let row_count = 0;
+		// let quantity_max = null;
+		// let quantity_min = null;
+		// let weight_max = null;
+		// let weight_min = null;
+		let cells = [];
+		while (row_count < cell_rows) {
+			let lng_point = lng_min;
+			let column_count = 0;
+			let inner_cells = [];
+			while (column_count < cell_columns) {
+				let lat_0 = lat_point - half_cell_height;
+				let lng_0 = lng_point - half_cell_width;
+				let lat_1 = lat_point + half_cell_height;
+				let lng_1 = lng_point + half_cell_width;
+				let bounds = [[lat_0, lng_0], [lat_1, lng_1]];
 
-			let total_quantity = 0;
-			let total_weight = 0;
-			for (let i = 1; i < allData.length; ++i) {
-				if(i<931 && i>2094){
-					continue;
-				}
+				let total_quantity = 0;
+				let total_weight = 0;
+				for (let i = 1; i < allData.length; ++i) {
+					if (i < 931 && i > 2094) {
+						continue;
+					}
 					let lat_data = allData[i][2];
 					let lng_data = allData[i][3];
-					if(lat_data > lat_0 && lat_data <= lat_1 && lng_data > lng_0 && lng_data <= lng_1) {
+					let date = new Date(allData[i][1]);
+					if (lat_data > lat_0 && lat_data <= lat_1 && lng_data > lng_0 && lng_data <= lng_1
+						&& date > start_date && date <= end_date) {
 						let quantity_data = allData[i][4];
 						let weight_data = allData[i][5];
 						if (quantity_data.trim() !== "") {
@@ -273,44 +289,86 @@ const createCells = results => {
 							total_weight += parseFloat(weight_data);
 						}
 					}
-			}
-			if (quantity_max === null || total_quantity > quantity_max){
-				quantity_max = total_quantity;
-			}
-			if (quantity_min === null || total_quantity < quantity_min){
-				quantity_min = total_quantity;
-			}
+				}
+				if (total_weight > 0) {
+					if (quantity_max === null || total_quantity > quantity_max) {
+						quantity_max = total_quantity;
+					}
+					if (quantity_min === null || total_quantity < quantity_min) {
+						quantity_min = total_quantity;
+					}
 
-			if (weight_max === null || total_weight > weight_max){
-				weight_max = total_weight;
+					if (weight_max === null || total_weight > weight_max) {
+						weight_max = total_weight;
+					}
+					if (weight_min === null || total_weight < weight_min) {
+						weight_min = total_weight;
+					}
+					inner_cells[column_count] = {
+						bounds: bounds,
+						quantity: total_quantity,
+						weight: total_weight,
+						date: end_date
+					};
+				} else {
+					inner_cells[column_count] = null;
+				}
+				lng_point += 2 * half_cell_width;
+				column_count++;
 			}
-			if (weight_min === null || total_weight < weight_min){
-				weight_min = total_weight;
-			}
-			inner_cells[column_count] = {bounds: bounds, quantity: total_quantity, weight: total_weight};
-			lng_point += 2*half_cell_width;
-			column_count++;
+			cells[row_count] = inner_cells;
+			lat_point += 2 * half_cell_height;
+			row_count++;
 		}
-		cells[row_count] = inner_cells;
-		lat_point += 2*half_cell_height;
-		row_count++;
+		// cells_collection.push({cells: cells, weight_max: weight_max, weight_min:weight_min});
+		cells_collection.push(cells);
+		start_date = new Date(end_date);
 	}
 
-	for(i=0; i<cells.length; i++){
-		let inner_cells =  cells[i];
-		for(j=0; j<inner_cells.length; j++){
-			let cell = inner_cells[j];
-			let value = normalized_rgb(cell.weight, weight_max, weight_min)
+	let features_collection = {
+		type: "FeatureCollection",
+		features: []
+	};
 
-			let dataString = `Weight: ${cell.weight} kg`;
-			// create a grayscale rectangle
-			L.rectangle(cell.bounds, {color: "rgb("+value+", "+value+", "+value+")", weight: 0, fillOpacity: 0.8}).addTo(wasteMap).bindPopup(dataString);
+	// Create rectangular cells on a timeline
+	for (k = 0; k < cells_collection.length; k++) {
+		let cells = cells_collection[k];
+		// let weight_max = cells_collection[k].weight_max;
+		// let weight_min = cells_collection[k].weight_min;
+		for (i = 0; i < cells.length; i++) {
+			let inner_cells = cells[i];
+			for (j = 0; j < inner_cells.length; j++) {
+				let cell = inner_cells[j];
+				if (cell !== null) {
+					let value = normalized_rgb(cell.weight, weight_max, weight_min);
+					let end = cell.date;
+					let start = new Date(end);
+					start.setDate(start.getDate() - interval);
+					start.setSeconds(start.getSeconds() + 1);
+
+					let dataString = `Weight: ${cell.weight} kg`;
+					let feature = L.rectangle(cell.bounds).toGeoJSON();
+					feature.properties = {
+						start: start,
+						end: end,
+						color: "rgb(" + value + ", " + value + ", " + value + ")",
+						weight: 0,
+						fillOpacity: 0.85,
+						description: dataString
+					};
+					features_collection.features.push(feature);
+				}
+			}
 		}
 	}
+	createTimeline(features_collection);
 	wasteMap.fitBounds([[lat_min, lng_min], [lat_max, lng_max]]);
 };
 
-function normalized_rgb(old_val, max, min){
+const normalized_rgb = (old_val, max, min) => {
+	if(max === min){
+		return 255;
+	}
 	return 255 - (old_val - min)*(255/(max-min));
 }
 
@@ -373,151 +431,34 @@ function showMDTResultsOnMap(results) {
 
 	let allData = results.data;
 
-	let points  = {
-		type: "FeatureCollection",
-		features: []
-	};
-
-	let end = moment().format("YYYY-MM-DD");
-
 	for (let i = 1; i < allData.length; ++i) {
 		if (allData[i][39] === 'NO' && (allData[i][18] !== undefined && allData[i][19] !== undefined)) {
-			// let dataString = `Description: ${allData[i][37]}<br> Location: ${allData[i][26]}<br>`;
+			let dataString = `Description: ${allData[i][37]}<br> Location: ${allData[i][26]}<br>`;
 
-			// L.marker([allData[i][18], allData[i][19]], {icon: yellowIcon}).addTo(wasteMap).bindTooltip(dataString);
-			let start = moment(allData[i][28], "DD-MM-YYYY hh:mm").format("YYYY-MM-DD");
-			if (start === "Invalid date") {
-				start = moment(allData[i][28], "MM//DD/YYYY hh:mm").format("YYYY-MM-DD");
-			}
-			console.log(start);
-			let feature = createTimelineFeature("Point", start, end, allData[i][19], allData[i][18]);
-			points.features.push(feature);
+			L.marker([allData[i][18], allData[i][19]], {icon: yellowIcon}).addTo(wasteMap).bindTooltip(dataString);
 		}
 	}
-	createTimeline(points);
 }
-
-function createTimelineFeature(type, start, end, lng, lat) {
-	return {
-		type: "Feature",
-		properties: {
-			start: start,
-			end: end
-		},
-		geometry: {
-			type: type,
-			coordinates: [lng, lat]
-		}
-	}
-
-}
-
 
 function createTimeline(features) {
-	let pointTimeline = L.timeline(features).addTo(wasteMap);
-
-	let slider = L.timelineSliderControl({
-		formatOutput: function (date) {
-			return moment(date).format("YYYY-MM-DD");
-		},
-	});
-	wasteMap.addControl(slider);
-
-	slider.addTimelines(pointTimeline);
-}
-
-function testTimeline(){
-	let geojsonFeature = {
-		type: "FeatureCollection",
-		features: [
-			{
-				type: "Feature",
-				properties: {
-					start: "1970-01-01",
-					end: "2014-12-04"
-				},
-				geometry: {
-					type: "Point",
-					coordinates: [6.086425781,62.4587092]
-				}
-			},
-			{
-				type: "Feature",
-				properties: {
-					start: "1970-01-01",
-					end: "2015-12-04"
-
-				},
-				geometry: {
-					type: "Point",
-					coordinates: [5.937423706,62.47172371]
-				}
-			},
-			{
-				type: "Feature",
-				properties: {
-					start: "1970-01-01",
-					end: "2016-12-04"
-				},
-				geometry: {
-					type: "Point",
-					coordinates: [6.020507813,62.50851458]
-				}
-			},
-			{
-				type: "Feature",
-				properties: {
-					start: "1970-01-01",
-					end: "2017-12-04"
-				},
-				geometry: {
-					type: "Point",
-					coordinates: [6.096725464,62.57089174]
-				}
-			},
-			{
-				type: "Feature",
-				properties: {
-					start: "1970-01-01",
-					end: "2018-12-04"
-				},
-				geometry: {
-					type: "Point",
-					coordinates: [6.028060913,62.54589324]
-				}
-			},
-			{
-				type: "Feature",
-				properties: {
-					start: "1970-01-01",
-					end: "2018-12-04"
-				},
-				geometry: {
-					type: "Point",
-					coordinates: [6.162643433,62.61166694]
-				}
-			}
-		]
-	};
-
-	let myStyle = {
-		"color": "#ff7800",
-		"weight": 20,
-		"opacity": 0.65
-	};
-
-	let pointTimeline = L.timeline(geojsonFeature, {
-		style: myStyle
+	let featureTimeline = L.timeline(features, {
+		style: feature => ({
+			color: feature.properties.color,
+			weight: feature.properties.weight,
+			fillOpacity: feature.properties.fillOpacity
+		}),
+		onEachFeature: (feature, layer) => {
+			layer.bindPopup(layer.feature.properties.description);
+		}
 	}).addTo(wasteMap);
 
 	let slider = L.timelineSliderControl({
-		formatOutput: function (date) {
-			return moment(date).format("YYYY-MM-DD");
-		},
+		formatOutput: date => new Date(date).toString(),
+		showTicks: false
 	});
 	wasteMap.addControl(slider);
 
-	slider.addTimelines(pointTimeline);
-};
+	slider.addTimelines(featureTimeline);
+}
 
 
