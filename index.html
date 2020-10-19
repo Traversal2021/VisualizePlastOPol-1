@@ -1,24 +1,27 @@
 <html>
 <head>
- <link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css"
-   integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ=="
-   crossorigin=""/>
+    <link crossorigin="" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css"
+          integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ=="
+          rel="stylesheet"/>
 
-<link rel="stylesheet" href="style.css"/>
+    <link href="style.css" rel="stylesheet"/>
 
- <!-- Make sure you put this AFTER Leaflet's CSS -->
- <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"
-   integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew=="
-   crossorigin=""></script>
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.6.2/proj4.js"></script>
-<script src="PapaParse-master/papaparse.js"></script>
+    <!-- Make sure you put this AFTER Leaflet's CSS -->
+    <script crossorigin=""
+            integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew=="
+            src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.6.2/proj4.js"></script>
+    <script src="PapaParse-master/papaparse.js"></script>
     <script src="js/leaflet.timeline.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.12.0/moment.min.js"></script>
-<script src="script.js"></script>
+    <script src="script.js"></script>
+
+    <!-- For placing timeline controls -->
     <style>
         .leaflet-bottom.leaflet-left {
             width: 100%;
         }
+
         .leaflet-control-container .leaflet-timeline-controls {
             box-sizing: border-box;
             width: 100%;
@@ -28,30 +31,19 @@
     </style>
 </head>
 <body>
-
-<!--<div class="fileDiv">-->
-<!--<span>SALT file</span>-->
-<!--<input type="file" id="salt-selector"><br/>-->
-<!--<span>Rydde file</span>-->
-<!--<input type="file" id="rydde-selector"><br>-->
-<!--<span>MDT file</span>-->
-<!--<input type="file" id="mdt-selector">-->
-<!--</div>-->
- <div id="wasteMap"></div>
+<div id="wasteMap"></div>
 <script>
 
-var wasteMap = L.map('wasteMap').setView([65.505, 10.09], 5);
-// var wasteMap = L.map('wasteMap').setView([62.4728781,6.1492684], 9); //Alesund
+    var wasteMap = L.map('wasteMap').setView([65.505, 10.09], 5);
 
-
-L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
-    attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
-    maxZoom: 18,
-    id: 'mapbox/streets-v11',
-    tileSize: 512,
-    zoomOffset: -1,
-    accessToken: 'pk.eyJ1Ijoibmljb2xvcGluY2kiLCJhIjoiY2tjdXBibHRlMmFsZTJybHVxMTFrdDBjcyJ9.gXT6ke1ai1JeZrii53-TcA'
-}).addTo(wasteMap);
+    L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
+        attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+        maxZoom: 18,
+        id: 'mapbox/streets-v11',
+        tileSize: 512,
+        zoomOffset: -1,
+        accessToken: 'pk.eyJ1Ijoibmljb2xvcGluY2kiLCJhIjoiY2tjdXBibHRlMmFsZTJybHVxMTFrdDBjcyJ9.gXT6ke1ai1JeZrii53-TcA'
+    }).addTo(wasteMap);
 
 </script>
 </body>
