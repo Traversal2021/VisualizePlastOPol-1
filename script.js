@@ -6,7 +6,6 @@ function allowLoading() { // Source: File API
         .then(data => {
             Papa.parse(data, {
                 complete: function (results) {
-                    // showDBResultsOnMap(results);
                     createCells(results);
                 }
             });
@@ -29,11 +28,16 @@ const createCells = results => {
     let weight_max = null;
     let weight_min = null;
     let cells_collection = [];
+    let pre_cells = [];
+    let pre_inner_cells = [];
+    let pre_inner_cell = null;
+    let timestamp = 0;
     let start_date = new Date(2019, 11, 31, 23, 59, 59);
     let interval = 7;
     let tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     tomorrow.setHours(0, 0, 0, 0);
+    let end_of_data_date = new Date();
     while (start_date < tomorrow) {
         let end_date = new Date(start_date);
         end_date.setDate(end_date.getDate() + interval);
@@ -44,10 +48,16 @@ const createCells = results => {
         // let weight_max = null;
         // let weight_min = null;
         let cells = [];
+        if (timestamp > 0) {
+            pre_cells = cells_collection[timestamp - 1];
+        }
         while (row_count < cell_rows) {
             let lng_point = lng_min;
             let column_count = 0;
             let inner_cells = [];
+            if (timestamp > 0) {
+                pre_inner_cells = pre_cells[row_count];
+            }
             while (column_count < cell_columns) {
                 let lat_0 = lat_point - half_cell_height;
                 let lng_0 = lng_point - half_cell_width;
@@ -76,7 +86,14 @@ const createCells = results => {
                         }
                     }
                 }
+                if (timestamp > 0) {
+                    pre_inner_cell = pre_inner_cells[column_count];
+                }
                 if (total_weight > 0) {
+                    if (pre_inner_cell !== null) {
+                        total_quantity += pre_inner_cell.quantity;
+                        total_weight += pre_inner_cell.weight;
+                    }
                     if (quantity_max === null || total_quantity > quantity_max) {
                         quantity_max = total_quantity;
                     }
@@ -96,6 +113,14 @@ const createCells = results => {
                         weight: total_weight,
                         date: end_date
                     };
+                    end_of_data_date = end_date;
+                } else if (pre_inner_cell !== null) {
+                    inner_cells[column_count] = {
+                        bounds: bounds,
+                        quantity: pre_inner_cell.quantity,
+                        weight: pre_inner_cell.weight,
+                        date: end_date
+                    };
                 } else {
                     inner_cells[column_count] = null;
                 }
@@ -108,6 +133,7 @@ const createCells = results => {
         }
         // cells_collection.push({cells: cells, weight_max: weight_max, weight_min:weight_min});
         cells_collection.push(cells);
+        timestamp++;
         start_date = new Date(end_date);
     }
 
@@ -126,13 +152,24 @@ const createCells = results => {
             for (j = 0; j < inner_cells.length; j++) {
                 let cell = inner_cells[j];
                 if (cell !== null) {
-                    let value = normalized_rgb(cell.weight, weight_max, weight_min);
                     let end = cell.date;
+                    if (end > end_of_data_date) { // Timeline upto last date of data collected
+                        continue;
+                    }
                     let start = new Date(end);
                     start.setDate(start.getDate() - interval);
                     start.setSeconds(start.getSeconds() + 1);
+                    let value = normalized_rgb(cell.weight, weight_max, weight_min);
 
-                    let dataString = `Weight: ${cell.weight} kg`;
+                    let bounds = []
+                    for (a = 0; a < cell.bounds.length; a++) {
+                        let bound = cell.bounds[a];
+                        for (b = 0; b < bound.length; b++) {
+                            bound[b] = bound[b].toString().match(/^-?\d+(?:\.\d{0,4})?/)[0];
+                        }
+                        bounds[a] = bound;
+                    }
+                    let dataString = `Lower bound: ${bounds[0][0]}, ${bounds[0][1]}<br>Upper bound: ${bounds[1][0]}, ${bounds[1][1]}<br>Weight: ${cell.weight} kg`;
                     let feature = L.rectangle(cell.bounds).toGeoJSON();
                     feature.properties = {
                         start: start,
