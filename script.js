@@ -1,12 +1,14 @@
 document.addEventListener("DOMContentLoaded", allowLoading, false);
 
 function allowLoading() { // Source: File API
+    wasteMap.spin(true);
     fetch("data/PlastOPol/database.csv")
         .then(response => response.text())
         .then(data => {
             Papa.parse(data, {
                 complete: function (results) {
                     createCells(results);
+                    wasteMap.spin(false);
                 }
             });
         });
@@ -14,7 +16,7 @@ function allowLoading() { // Source: File API
 
 const createCells = results => {
     // const lat_min = 62.29277009577185, lat_max = 62.86852390984713, lng_min = 6.06296529018893, lng_max = 7.153935062865635; //Alesund
-    const lat_min = 62, lat_max = 63, lng_min = 5.5, lng_max = 7.5; //Alesund
+    const lat_min = 62.46, lat_max = 62.56, lng_min = 6.15, lng_max = 6.35; //Alesund
     // const lat_min = 67.775, lat_max = 69.35, lng_min = 12.5, lng_max = 16.15; // Lofoten
     let allData = results.data;
 
@@ -164,10 +166,11 @@ const createCells = results => {
                     let bounds = []
                     for (a = 0; a < cell.bounds.length; a++) {
                         let bound = cell.bounds[a];
+                        let bounds_comps = [];
                         for (b = 0; b < bound.length; b++) {
-                            bound[b] = bound[b].toString().match(/^-?\d+(?:\.\d{0,4})?/)[0];
+                            bounds_comps[b] = bound[b].toString().match(/^-?\d+(?:\.\d{0,4})?/)[0];
                         }
-                        bounds[a] = bound;
+                        bounds[a] = bounds_comps;
                     }
                     let dataString = `Lower bound: ${bounds[0][0]}, ${bounds[0][1]}<br>Upper bound: ${bounds[1][0]}, ${bounds[1][1]}<br>Weight: ${cell.weight} kg`;
                     let feature = L.rectangle(cell.bounds).toGeoJSON();
@@ -185,7 +188,7 @@ const createCells = results => {
         }
     }
     createTimeline(features_collection);
-    wasteMap.fitBounds([[lat_min, lng_min], [lat_max, lng_max]]);
+wasteMap.fitBounds([[lat_min - 0.05, lng_min - 0.05], [lat_max + 0.05, lng_max + 0.05]]);
 };
 
 const normalized_rgb = (old_val, max, min) => {
