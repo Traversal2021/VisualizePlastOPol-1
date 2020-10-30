@@ -70,7 +70,7 @@ const createCells = results => {
                 let total_quantity = 0;
                 let total_weight = 0;
                 for (let i = 1; i < allData.length; ++i) {
-                    if (i < 931 && i > 2094) {
+                    if (i < 932 || i > 2094) {
                         continue;
                     }
                     let lat_data = allData[i][2];
