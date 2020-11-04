@@ -7,7 +7,8 @@ function allowLoading() { // Source: File API
         .then(data => {
             Papa.parse(data, {
                 complete: function (results) {
-                    createCells(results);
+                    // createCells(results);
+                    createPoints(results);
                     wasteMap.spin(false);
                 }
             });
@@ -188,7 +189,102 @@ const createCells = results => {
         }
     }
     createTimeline(features_collection);
-wasteMap.fitBounds([[lat_min - 0.05, lng_min - 0.05], [lat_max + 0.05, lng_max + 0.05]]);
+    wasteMap.fitBounds([[lat_min - 0.05, lng_min - 0.05], [lat_max + 0.05, lng_max + 0.05]]);
+};
+
+const createPoints = results => {
+    let latLng = L.latLng(62.48, 6.27); //Svinøya
+    let side = 5000; //Bound length in m
+    let bounds = latLng.toBounds(side);
+    let allData = results.data;
+
+    let weight_max = null;
+    let weight_min = null;
+    let points_collection = [];
+    let start_date = new Date(2019, 11, 31, 23, 59, 59);
+    let interval = 7;
+    let tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+    while (start_date < tomorrow) {
+        let end_date = new Date(start_date);
+        end_date.setDate(end_date.getDate() + interval);
+
+        let weight = 0;
+        let points = [];
+        for (let i = 1; i < allData.length; i++) {
+            if (i < 932 || i > 2094) {
+                continue;
+            }
+            let lat_data = allData[i][2];
+            let lng_data = allData[i][3];
+            let point = L.latLng(lat_data, lng_data);
+            let date = new Date(allData[i][1]);
+            if (bounds.contains(point) && date > start_date && date <= end_date) {
+                let weight_data = allData[i][5];
+                if (weight_data.trim() !== "") {
+                    weight = parseFloat(weight_data);
+                }
+
+                if (weight > 0) {
+                    if (weight_max === null || weight > weight_max) {
+                        weight_max = weight;
+                    }
+                    if (weight_min === null || weight < weight_min) {
+                        weight_min = weight;
+                    }
+                    point.alt = weight;
+                    points.push(point);
+                }
+            }
+        }
+        if (points.length > 0) {
+            let data = {points: points, date: end_date, weight_max: weight_max, weight_min: weight_min}
+            points_collection.push(data);
+        }
+        start_date = new Date(end_date);
+    }
+
+    let features_collection = {
+        type: "FeatureCollection",
+        features: []
+    };
+
+    // Drop points in a rectangular cell on a timeline
+    for (k = 0; k < points_collection.length; k++) {
+        let data = points_collection[k];
+        let weight_max = data.weight_max;
+        let weight_min = data.weight_min;
+        let points = data.points;
+        let end = data.date;
+        let start = new Date(end);
+        start.setDate(start.getDate() - interval);
+        start.setSeconds(start.getSeconds() + 1);
+        for (i = 0; i < points.length; i++) {
+            let point = points[i];
+            let dataString = `Coordinates: [${point.lat}, ${point.lng}]<br>Weight: ${point.alt} kg`;
+            let feature = {
+                type: "Feature",
+                geometry: {
+                    type: "Point",
+                    coordinates: [point.lng, point.lat]
+                },
+                properties: {
+                    start: start,
+                    end: end,
+                    color: "#000000",
+                    weight: 0,
+                    fillOpacity: 1,
+                    description: dataString,
+                    points: points,
+                    radius: normalized_radius(point.alt, weight_max, weight_min)
+                }
+            };
+            features_collection.features.push(feature);
+        }
+    }
+    createTimeline(features_collection);
+    wasteMap.fitBounds(bounds);
 };
 
 const normalized_rgb = (old_val, max, min) => {
@@ -200,6 +296,11 @@ const normalized_rgb = (old_val, max, min) => {
 
 function createTimeline(features) {
     let featureTimeline = L.timeline(features, {
+        pointToLayer: function (feature, latlng) {
+            return L.circleMarker(latlng, {
+                radius: feature.properties.radius,
+            });
+        },
         style: feature => ({
             color: feature.properties.color,
             weight: feature.properties.weight,
@@ -217,6 +318,13 @@ function createTimeline(features) {
     wasteMap.addControl(slider);
 
     slider.addTimelines(featureTimeline);
+}
+
+const normalized_radius = (old_val, max, min) => {
+    if (max === min) {
+        return 25;
+    }
+    return 25 * (1 + (old_val - min) / (max - min));
 }
 
 
