@@ -1,21 +1,65 @@
 document.addEventListener("DOMContentLoaded", allowLoading, false);
 
+const WEEKLY = "Weekly", MONTHLY = "Monthly", YEARLY = "Yearly";
+
+let interval = WEEKLY;
+let timeline;
+let timelineSlider;
+
 function allowLoading() { // Source: File API
-    wasteMap.spin(true);
-    fetch("data/PlastOPol/database.csv")
-        .then(response => response.text())
-        .then(data => {
-            Papa.parse(data, {
-                complete: function (results) {
-                    // createCells(results);
-                    createPoints(results);
-                    wasteMap.spin(false);
-                }
-            });
-        });
+    visualize(true);
+
+    L.control.custom({
+        position: 'topleft',
+        content: '<b>Type:</b><input type="radio" id="points" name="type" value="points" checked><label for="points">Points</label>' +
+            '<input type="radio" id="cells" name="type" value="cells"><label for="cells">Cells</label>',
+    }).addTo(wasteMap);
+
+    L.control.custom({
+        position: 'topleft',
+        content: "<b>From:</b><select id='from-year-dropdown'></select>&nbsp;" +
+            "<b>To:</b><select id='to-year-dropdown'></select> &nbsp;" +
+            "<button id='display-button'>Display</button>",
+        events:
+            {
+                click: event => {
+                    if (event.target.id === "display-button") {
+                        visualize(false);
+                    }
+                },
+            }
+    }).addTo(wasteMap);
+
+    fill_options(document.getElementById('from-year-dropdown'));
+    fill_options(document.getElementById('to-year-dropdown'));
+
+    L.control.timelineSlider({
+        position: "topleft",
+        timelineItems: [WEEKLY, MONTHLY, YEARLY],
+        extraChangeMapParams: {},
+        changeMap: changeMapFunction
+    }).addTo(wasteMap);
 }
 
-const createCells = results => {
+const fill_options = select => {
+    var max = new Date().getFullYear(),
+        min = max - 9;
+    for (var i = min; i <= max; i++) {
+        var opt = document.createElement("option");
+        opt.value = i;
+        opt.innerHTML = i;
+        if (i === max) {
+            opt.setAttribute("selected", "selected");
+        }
+        select.appendChild(opt);
+    }
+};
+
+const changeMapFunction = obj => {
+    interval = obj.label;
+};
+
+const createCells = (results, from, to, period) => {
     // const lat_min = 62.29277009577185, lat_max = 62.86852390984713, lng_min = 6.06296529018893, lng_max = 7.153935062865635; //Alesund
     const lat_min = 62.46, lat_max = 62.56, lng_min = 6.15, lng_max = 6.35; //Alesund
     // const lat_min = 67.775, lat_max = 69.35, lng_min = 12.5, lng_max = 16.15; // Lofoten
@@ -192,7 +236,7 @@ const createCells = results => {
     wasteMap.fitBounds([[lat_min - 0.05, lng_min - 0.05], [lat_max + 0.05, lng_max + 0.05]]);
 };
 
-const createPoints = results => {
+const createPoints = (results, from, to, period) => {
     let latLng = L.latLng(62.48, 6.27); //Svinøya
     let side = 5000; //Bound length in m
     let bounds = latLng.toBounds(side);
@@ -239,7 +283,7 @@ const createPoints = results => {
             }
         }
         if (points.length > 0) {
-            let data = {points: points, date: end_date, weight_max: weight_max, weight_min: weight_min}
+            let data = {points: points, date: end_date};
             points_collection.push(data);
         }
         start_date = new Date(end_date);
@@ -253,8 +297,6 @@ const createPoints = results => {
     // Drop points in a rectangular cell on a timeline
     for (k = 0; k < points_collection.length; k++) {
         let data = points_collection[k];
-        let weight_max = data.weight_max;
-        let weight_min = data.weight_min;
         let points = data.points;
         let end = data.date;
         let start = new Date(end);
@@ -277,7 +319,7 @@ const createPoints = results => {
                     fillOpacity: 1,
                     description: dataString,
                     points: points,
-                    radius: normalized_radius(point.alt, weight_max, weight_min)
+                    radius: log_normalized_radius(point.alt, weight_min - 1, weight_max, 5, 25)
                 }
             };
             features_collection.features.push(feature);
@@ -292,7 +334,7 @@ const normalized_rgb = (old_val, max, min) => {
         return 255;
     }
     return 255 - (old_val - min) * (255 / (max - min));
-}
+};
 
 function createTimeline(features) {
     let featureTimeline = L.timeline(features, {
@@ -318,13 +360,52 @@ function createTimeline(features) {
     wasteMap.addControl(slider);
 
     slider.addTimelines(featureTimeline);
+    timeline = featureTimeline;
+    timelineSlider = slider;
 }
 
-const normalized_radius = (old_val, max, min) => {
-    if (max === min) {
-        return 25;
+const log_normalized_radius = (enteredValue, minEntry, maxEntry, normalizedMin, normalizedMax) => {
+    let mx = (Math.log((enteredValue - minEntry)) / (Math.log(maxEntry - minEntry)));
+    const preshiftNormalized = mx * (normalizedMax - normalizedMin);
+    return preshiftNormalized + normalizedMin;
+};
+
+const visualize = init => {
+    let from = new Date().getFullYear();
+    let to = from;
+    let isPoints = false;
+    if (!init) {
+        wasteMap.removeControl(timelineSlider);
+        wasteMap.removeLayer(timeline);
+        let from_select = document.getElementById('from-year-dropdown'),
+            to_select = document.getElementById('to-year-dropdown');
+
+        from = from_select.value;
+        to = to_select.value;
+        if (from > to) {
+            alert("Please select a valid year range");
+        }
+        let points = document.getElementById('points');
+        isPoints = points !== null && points.checked;
     }
-    return 25 * (1 + (old_val - min) / (max - min));
-}
 
+    createLayers(from, to, isPoints || init);
+};
 
+const createLayers = (from, to, isPoints) => {
+    wasteMap.spin(true);
+    fetch("data/PlastOPol/database.csv")
+        .then(response => response.text())
+        .then(data => {
+            Papa.parse(data, {
+                complete: function (results) {
+                    if (isPoints) {
+                        createPoints(results, from, to, interval)
+                    } else {
+                        createCells(results, from, to, interval);
+                    }
+                    wasteMap.spin(false);
+                }
+            });
+        });
+};
