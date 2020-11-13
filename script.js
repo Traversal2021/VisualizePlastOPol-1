@@ -1,6 +1,9 @@
 document.addEventListener("DOMContentLoaded", allowLoading, false);
 
 const WEEKLY = "Weekly", MONTHLY = "Monthly", YEARLY = "Yearly";
+const MIN_YEAR = 2013;
+const lat_min = 62.345252708439276, lat_max = 62.61474729156072, lng_min = 5.978375939307136,
+    lng_max = 6.561624060692863; //Svinøya 30x30
 
 let interval = WEEKLY;
 let timeline;
@@ -42,10 +45,9 @@ function allowLoading() { // Source: File API
 }
 
 const fill_options = select => {
-    var max = new Date().getFullYear(),
-        min = max - 9;
-    for (var i = min; i <= max; i++) {
-        var opt = document.createElement("option");
+    let max = new Date().getFullYear();
+    for (let i = MIN_YEAR; i <= max; i++) {
+        const opt = document.createElement("option");
         opt.value = i;
         opt.innerHTML = i;
         if (i === max) {
@@ -59,7 +61,61 @@ const changeMapFunction = obj => {
     interval = obj.label;
 };
 
-const createCells = (results, from, to, period) => {
+const setupTimeline = (from, to, period) => {
+    let start_date = moment(from.toString(), "YYYY");
+    let end_date = moment(to.toString(), "YYYY").add(1, "y");
+    let current_date = moment();
+    if (current_date.year() === to) {
+        if (period === WEEKLY) {
+            current_date.add(1, "w").startOf("isoWeek");
+        } else if (period === MONTHLY) {
+            current_date.add(1, "M").startOf("M");
+        } else {
+            current_date.add(1, "y").startOf("y");
+        }
+        end_date = current_date;
+    }
+    return {start: start_date, end: end_date}
+};
+
+const getStepRange = (start_date, period) => {
+    let current_date = moment();
+    if (current_date.year() === start_date.year()) {
+        if (period === WEEKLY) {
+            return {min: 1, max: current_date.isoWeek()};
+        } else if (period === MONTHLY) {
+            return {min: 0, max: current_date.month()};
+        } else {
+            return {min: 1, max: 1};
+        }
+    } else {
+        if (period === WEEKLY) {
+            return {min: 1, max: start_date.isoWeeksInYear()};
+        } else if (period === MONTHLY) {
+            return {min: 0, max: 11};
+        } else {
+            return {min: 1, max: 1};
+        }
+    }
+};
+
+const getDate = instance => {
+    return instance.format("YYYY-MM-DD HH:mm");
+};
+
+const getStartDate = (end, period) => {
+    if (period === WEEKLY) {
+        end.startOf("isoWeek");
+    } else if (period === MONTHLY) {
+        end.startOf("M");
+    } else {
+        end.startOf("y");
+    }
+    return getDate(end);
+};
+
+
+/*const createCells = (results, from, to, period) => {
     // const lat_min = 62.29277009577185, lat_max = 62.86852390984713, lng_min = 6.06296529018893, lng_max = 7.153935062865635; //Alesund
     const lat_min = 62.46, lat_max = 62.56, lng_min = 6.15, lng_max = 6.35; //Alesund
     // const lat_min = 67.775, lat_max = 69.35, lng_min = 12.5, lng_max = 16.15; // Lofoten
@@ -79,13 +135,16 @@ const createCells = (results, from, to, period) => {
     let pre_inner_cells = [];
     let pre_inner_cell = null;
     let timestamp = 0;
-    let start_date = new Date(2019, 11, 31, 23, 59, 59);
+    /!*let start_date = new Date(2019, 11, 31, 23, 59, 59);
     let interval = 7;
     let tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(0, 0, 0, 0);
+    tomorrow.setHours(0, 0, 0, 0);*!/
     let end_of_data_date = new Date();
-    while (start_date < tomorrow) {
+    let timelineData = setupTimeline(from, to, period);
+    let start_date = timelineData.start;
+    let interval = timelineData.interval;
+    while (start_date < timelineData.tomorrow) {
         let end_date = new Date(start_date);
         end_date.setDate(end_date.getDate() + interval);
         let lat_point = lat_min;
@@ -234,36 +293,49 @@ const createCells = (results, from, to, period) => {
     }
     createTimeline(features_collection);
     wasteMap.fitBounds([[lat_min - 0.05, lng_min - 0.05], [lat_max + 0.05, lng_max + 0.05]]);
-};
+};*/
 
 const createPoints = (results, from, to, period) => {
     let latLng = L.latLng(62.48, 6.27); //Svinøya
-    let side = 5000; //Bound length in m
+    let side = 30000; //Bound length in m
     let bounds = latLng.toBounds(side);
     let allData = results.data;
 
     let weight_max = null;
     let weight_min = null;
     let points_collection = [];
-    let start_date = new Date(2019, 11, 31, 23, 59, 59);
-    let interval = 7;
-    let tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(0, 0, 0, 0);
-    while (start_date < tomorrow) {
-        let end_date = new Date(start_date);
-        end_date.setDate(end_date.getDate() + interval);
+
+    let timelineData = setupTimeline(from, to, period);
+    let start_date = timelineData.start;
+
+    let min_max = getStepRange(start_date, period);
+    let max = min_max.max;
+    let min = min_max.min;
+
+    let end_date = moment(start_date);
+    if (period === WEEKLY && start_date.get("isoWeek") > min) {
+        end_date.add(1, "w");
+    }
+    while (start_date < timelineData.end) {
+        if (period === WEEKLY) {
+            end_date.endOf("isoWeek");
+        } else if (period === MONTHLY) {
+            end_date.endOf("M");
+        } else {
+            end_date.endOf("y");
+        }
+        max--;
 
         let weight = 0;
         let points = [];
         for (let i = 1; i < allData.length; i++) {
-            if (i < 932 || i > 2094) {
+            if (i < 932 || i > 17798) {
                 continue;
             }
             let lat_data = allData[i][2];
             let lng_data = allData[i][3];
             let point = L.latLng(lat_data, lng_data);
-            let date = new Date(allData[i][1]);
+            let date = moment(allData[i][1]);
             if (bounds.contains(point) && date > start_date && date <= end_date) {
                 let weight_data = allData[i][5];
                 if (weight_data.trim() !== "") {
@@ -283,10 +355,22 @@ const createPoints = (results, from, to, period) => {
             }
         }
         if (points.length > 0) {
-            let data = {points: points, date: end_date};
+            let data = {points: points, date: getDate(end_date)};
             points_collection.push(data);
         }
-        start_date = new Date(end_date);
+        if (max < min) {
+            start_date.add(1, "y").startOf("y");
+            min_max = getStepRange(start_date, period);
+            max = min_max.max;
+            min = min_max.min;
+        }
+        if (period === WEEKLY) {
+            end_date.add(1, "w");
+        } else if (period === MONTHLY) {
+            end_date.add(1, "M");
+        } else {
+            end_date.add(1, "y");
+        }
     }
 
     let features_collection = {
@@ -295,14 +379,13 @@ const createPoints = (results, from, to, period) => {
     };
 
     // Drop points in a rectangular cell on a timeline
-    for (k = 0; k < points_collection.length; k++) {
+    for (let k = 0; k < points_collection.length; k++) {
         let data = points_collection[k];
         let points = data.points;
-        let end = data.date;
-        let start = new Date(end);
-        start.setDate(start.getDate() - interval);
-        start.setSeconds(start.getSeconds() + 1);
-        for (i = 0; i < points.length; i++) {
+        let end = moment(data.date);
+        let endDate = getDate(end);
+        let startDate = getStartDate(end, period);
+        for (let i = 0; i < points.length; i++) {
             let point = points[i];
             let dataString = `Coordinates: [${point.lat}, ${point.lng}]<br>Weight: ${point.alt} kg`;
             let feature = {
@@ -312,8 +395,8 @@ const createPoints = (results, from, to, period) => {
                     coordinates: [point.lng, point.lat]
                 },
                 properties: {
-                    start: start,
-                    end: end,
+                    start: startDate,
+                    end: endDate,
                     color: "#000000",
                     weight: 0,
                     fillOpacity: 1,
@@ -326,7 +409,7 @@ const createPoints = (results, from, to, period) => {
         }
     }
     createTimeline(features_collection);
-    wasteMap.fitBounds(bounds);
+    wasteMap.fitBounds([[bounds.getSouth() - 0.05, bounds.getWest() - 0.05], [bounds.getNorth() + 0.05, bounds.getEast() + 0.05]]);
 };
 
 const normalized_rgb = (old_val, max, min) => {
@@ -346,7 +429,7 @@ function createTimeline(features) {
         style: feature => ({
             color: feature.properties.color,
             weight: feature.properties.weight,
-            fillOpacity: feature.properties.fillOpacity
+            fillOpacity: 0.5
         }),
         onEachFeature: (feature, layer) => {
             layer.bindPopup(layer.feature.properties.description);
@@ -354,7 +437,7 @@ function createTimeline(features) {
     }).addTo(wasteMap);
 
     let slider = L.timelineSliderControl({
-        formatOutput: date => new Date(date).toString(),
+        formatOutput: date => getDate(moment(date)),
         showTicks: false
     });
     wasteMap.addControl(slider);
@@ -380,8 +463,8 @@ const visualize = init => {
         let from_select = document.getElementById('from-year-dropdown'),
             to_select = document.getElementById('to-year-dropdown');
 
-        from = from_select.value;
-        to = to_select.value;
+        from = parseInt(from_select.value);
+        to = parseInt(to_select.value);
         if (from > to) {
             alert("Please select a valid year range");
         }
@@ -393,19 +476,27 @@ const visualize = init => {
 };
 
 const createLayers = (from, to, isPoints) => {
-    wasteMap.spin(true);
-    fetch("data/PlastOPol/database.csv")
-        .then(response => response.text())
-        .then(data => {
-            Papa.parse(data, {
-                complete: function (results) {
-                    if (isPoints) {
+    if (isPoints) {
+        wasteMap.spin(true);
+        fetch("data/PlastOPol/database.csv")
+            .then(response => response.text())
+            .then(data => {
+                Papa.parse(data, {
+                    complete: function (results) {
                         createPoints(results, from, to, interval)
-                    } else {
-                        createCells(results, from, to, interval);
+                        wasteMap.spin(false);
                     }
-                    wasteMap.spin(false);
-                }
+                });
             });
-        });
+    } else {
+        wasteMap.spin(true);
+        fetch("data/PlastOPol/plast_o_pol_data/plast_data/cells_" + from + "_" + to + "_" + interval + ".json")
+            .then(response => response.text())
+            .then(data => {
+                let features = JSON.parse(data);
+                createTimeline(features);
+                wasteMap.spin(false);
+            });
+        wasteMap.fitBounds([[lat_min - 0.05, lng_min - 0.05], [lat_max + 0.05, lng_max + 0.05]]);
+    }
 };
