@@ -490,7 +490,7 @@ const createLayers = (from, to, isPoints) => {
             });
     } else {
         wasteMap.spin(true);
-        fetch("data/PlastOPol/plast_o_pol_data/plast_data/cells_" + from + "_" + to + "_" + interval + ".json")
+        fetch("data/PlastOPol/plast_o_pol_data/plast_data/cells_" + from + "_" + to + "_" + YEARLY + ".json") //TODO: change to 'interval' after file generation
             .then(response => response.text())
             .then(data => {
                 let features = JSON.parse(data);
