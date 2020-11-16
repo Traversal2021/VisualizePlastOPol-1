@@ -68,7 +68,11 @@ const getDate = instance => {
 
 const getStartDate = (end, period) => {
     if (period === WEEKLY) {
+        let year = moment(end).year();
         end.startOf("isoWeek");
+        if (end.year() < year) {
+            end.add(1, "y").startOf("y");
+        }
     } else if (period === MONTHLY) {
         end.startOf("M");
     } else {
