@@ -260,20 +260,23 @@ const createCells = (results, cells, from, to, period) => {
                 end_of_data_date = getDate(end_date); /*Added to include 0 value cells*/
             }
         }
-        updateAllCells(data_cells, pre_cells, cells, isNotFirst, end_date);
-        let max_min_weights = getMaxMinWeights(data_cells);
-        let maxWeight = max_min_weights.max;
-        let minWeight = max_min_weights.min;
+        if (Object.keys(data_cells).length > 0 || isNotFirst) {
+            updateAllCells(data_cells, pre_cells, cells, isNotFirst, end_date);
+            let max_min_weights = getMaxMinWeights(data_cells);
+            let maxWeight = max_min_weights.max;
+            let minWeight = max_min_weights.min;
 
-        if (weight_max === null || maxWeight > weight_max) {
-            weight_max = maxWeight;
+            if (weight_max === null || maxWeight > weight_max) {
+                weight_max = maxWeight;
+            }
+            if (weight_min === null || minWeight < weight_min) {
+                weight_min = minWeight;
+            }
+
+            cells_collection.push(data_cells);
+            timestamp++;
+            isNotFirst = true;
         }
-        if (weight_min === null || minWeight < weight_min) {
-            weight_min = minWeight;
-        }
-        cells_collection.push(data_cells);
-        timestamp++;
-        isNotFirst = true;
 
         if (period === WEEKLY) {
             start_date = moment(end_date).add(1, "s");
