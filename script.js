@@ -8,6 +8,7 @@ const lat_min = 62.345252708439276, lat_max = 62.61474729156072, lng_min = 5.978
 let interval = WEEKLY;
 let timeline;
 let timelineSlider;
+let box;
 
 function allowLoading() { // Source: File API
     visualize(true);
@@ -42,6 +43,8 @@ function allowLoading() { // Source: File API
         extraChangeMapParams: {},
         changeMap: changeMapFunction
     }).addTo(wasteMap);
+
+    box = L.control.messagebox({position: "topleft"}).addTo(wasteMap);
 }
 
 const fill_options = select => {
@@ -105,7 +108,11 @@ const getDate = instance => {
 
 const getStartDate = (end, period) => {
     if (period === WEEKLY) {
+        let year = moment(end).year();
         end.startOf("isoWeek");
+        if (end.year() < year) {
+            end.add(1, "y").startOf("y");
+        }
     } else if (period === MONTHLY) {
         end.startOf("M");
     } else {
@@ -308,23 +315,18 @@ const createPoints = (results, from, to, period) => {
     let timelineData = setupTimeline(from, to, period);
     let start_date = timelineData.start;
 
-    let min_max = getStepRange(start_date, period);
-    let max = min_max.max;
-    let min = min_max.min;
-
     let end_date = moment(start_date);
-    if (period === WEEKLY && start_date.get("isoWeek") > min) {
-        end_date.add(1, "w");
-    }
     while (start_date < timelineData.end) {
         if (period === WEEKLY) {
             end_date.endOf("isoWeek");
+            if (end_date.year() > to) {
+                end_date.subtract(1, "y").endOf("y");
+            }
         } else if (period === MONTHLY) {
             end_date.endOf("M");
         } else {
             end_date.endOf("y");
         }
-        max--;
 
         let weight = 0;
         let points = [];
@@ -354,23 +356,27 @@ const createPoints = (results, from, to, period) => {
                 }
             }
         }
+
         if (points.length > 0) {
             let data = {points: points, date: getDate(end_date)};
             points_collection.push(data);
         }
-        if (max < min) {
-            start_date.add(1, "y").startOf("y");
-            min_max = getStepRange(start_date, period);
-            max = min_max.max;
-            min = min_max.min;
-        }
+
         if (period === WEEKLY) {
-            end_date.add(1, "w");
+            start_date = moment(end_date).add(1, "s");
+            end_date = moment(start_date);
         } else if (period === MONTHLY) {
             end_date.add(1, "M");
+            start_date.add(1, "M");
         } else {
             end_date.add(1, "y");
+            start_date.add(1, "y");
         }
+    }
+
+    if (points_collection.length === 0) {
+        box.show("<b>No data</b>");
+        return;
     }
 
     let features_collection = {
@@ -420,31 +426,35 @@ const normalized_rgb = (old_val, max, min) => {
 };
 
 function createTimeline(features) {
-    let featureTimeline = L.timeline(features, {
-        pointToLayer: function (feature, latlng) {
-            return L.circleMarker(latlng, {
-                radius: feature.properties.radius,
-            });
-        },
-        style: feature => ({
-            color: feature.properties.color,
-            weight: feature.properties.weight,
-            fillOpacity: 0.5
-        }),
-        onEachFeature: (feature, layer) => {
-            layer.bindPopup(layer.feature.properties.description);
-        }
-    }).addTo(wasteMap);
+    if (features.features.length > 0) {
+        let featureTimeline = L.timeline(features, {
+            pointToLayer: function (feature, latlng) {
+                return L.circleMarker(latlng, {
+                    radius: feature.properties.radius,
+                });
+            },
+            style: feature => ({
+                color: feature.properties.color,
+                weight: feature.properties.weight,
+                fillOpacity: 0.5
+            }),
+            onEachFeature: (feature, layer) => {
+                layer.bindPopup(layer.feature.properties.description);
+            }
+        }).addTo(wasteMap);
 
-    let slider = L.timelineSliderControl({
-        formatOutput: date => getDate(moment(date)),
-        showTicks: false
-    });
-    wasteMap.addControl(slider);
+        let slider = L.timelineSliderControl({
+            formatOutput: date => getDate(moment(date)),
+            showTicks: false
+        });
+        wasteMap.addControl(slider);
 
-    slider.addTimelines(featureTimeline);
-    timeline = featureTimeline;
-    timelineSlider = slider;
+        slider.addTimelines(featureTimeline);
+        timeline = featureTimeline;
+        timelineSlider = slider;
+    } else {
+        box.show("<b>No data</b>");
+    }
 }
 
 const log_normalized_radius = (enteredValue, minEntry, maxEntry, normalizedMin, normalizedMax) => {
@@ -466,7 +476,8 @@ const visualize = init => {
         from = parseInt(from_select.value);
         to = parseInt(to_select.value);
         if (from > to) {
-            alert("Please select a valid year range");
+            box.show("<b>Please select a valid year range</b>");
+            return;
         }
         let points = document.getElementById('points');
         isPoints = points !== null && points.checked;
