@@ -9,6 +9,7 @@ let interval = WEEKLY;
 let timeline;
 let timelineSlider;
 let box;
+let isInit = true;
 
 function allowLoading() { // Source: File API
     visualize(true);
@@ -48,6 +49,8 @@ function allowLoading() { // Source: File API
     }).addTo(wasteMap);
 
     box = L.control.messagebox({position: "topleft"}).addTo(wasteMap);
+
+    isInit = false;
 }
 
 const fill_options = select => {
@@ -65,7 +68,9 @@ const fill_options = select => {
 
 const changeMapFunction = obj => {
     interval = obj.label;
-    visualize(false);
+    if (!isInit) {
+        visualize(false);
+    }
 };
 
 const setupTimeline = (from, to, period) => {
@@ -238,11 +243,11 @@ const log_normalized_radius = (enteredValue, minEntry, maxEntry, normalizedMin, 
     return preshiftNormalized + normalizedMin;
 };
 
-const visualize = init => {
+const visualize = isInit => {
     let from = moment().year();
     let to = from;
     let isPoints = false;
-    if (!init) {
+    if (!isInit) {
         wasteMap.removeControl(timelineSlider);
         wasteMap.removeLayer(timeline);
         let from_select = document.getElementById('from-year-dropdown'),
@@ -258,7 +263,7 @@ const visualize = init => {
         isPoints = points !== null && points.checked;
     }
 
-    createLayers(from, to, isPoints || init);
+    createLayers(from, to, isPoints || isInit);
 };
 
 const createLayers = (from, to, isPoints) => {
