@@ -73,137 +73,7 @@ const changeMapFunction = obj => {
     }
 };
 
-const setupTimeline = (from, to, period) => {
-    let start_date = moment(from.toString(), "YYYY");
-    let end_date = moment(to.toString(), "YYYY").add(1, "y");
-    let current_date = moment();
-    if (current_date.year() === to) {
-        if (period === WEEKLY) {
-            current_date.add(1, "w").startOf("isoWeek");
-        } else if (period === MONTHLY) {
-            current_date.add(1, "M").startOf("M");
-        } else {
-            current_date.add(1, "y").startOf("y");
-        }
-        end_date = current_date;
-    }
-    return {start: start_date, end: end_date}
-};
-
 const getDate = instance => instance.format("YYYY-MM-DD HH:mm");
-
-const createPoints = (results, from, to, period) => {
-    let latLng = L.latLng(62.48, 6.27); //Svinøya
-    let side = 30000; //Bound length in m
-    let bounds = latLng.toBounds(side);
-    let allData = results.data;
-
-    let weight_max = null;
-    let weight_min = null;
-    let points_collection = [];
-
-    let timelineData = setupTimeline(from, to, period);
-    let start_date = timelineData.start;
-
-    let end_date = moment(start_date);
-    while (start_date < timelineData.end) {
-        if (period === WEEKLY) {
-            end_date.endOf("isoWeek");
-            if (end_date.year() > to) {
-                end_date.subtract(1, "y").endOf("y");
-            }
-        } else if (period === MONTHLY) {
-            end_date.endOf("M");
-        } else {
-            end_date.endOf("y");
-        }
-
-        let weight = 0;
-        let points = [];
-        for (let i = 1; i < allData.length; i++) {
-            if (i < 932 || i > 17798) {
-                continue;
-            }
-            let lat_data = allData[i][2];
-            let lng_data = allData[i][3];
-            let point = L.latLng(lat_data, lng_data);
-            let date = moment(allData[i][1]);
-            if (bounds.contains(point) && date > start_date && date <= end_date) {
-                let weight_data = allData[i][5];
-                if (weight_data.trim() !== "") {
-                    weight = parseFloat(weight_data);
-                }
-
-                if (weight > 0) {
-                    if (weight_max === null || weight > weight_max) {
-                        weight_max = weight;
-                    }
-                    if (weight_min === null || weight < weight_min) {
-                        weight_min = weight;
-                    }
-                    point.alt = weight;
-                    points.push(point);
-                }
-            }
-        }
-
-        if (points.length > 0) {
-            let data = {points: points, start: getDate(start_date), end: getDate(end_date)};
-            points_collection.push(data);
-        }
-
-        if (period === WEEKLY) {
-            start_date = moment(end_date).add(1, "s");
-            end_date = moment(start_date);
-        } else if (period === MONTHLY) {
-            end_date.add(1, "M");
-            start_date.add(1, "M");
-        } else {
-            end_date.add(1, "y");
-            start_date.add(1, "y");
-        }
-    }
-
-    if (points_collection.length === 0) {
-        box.show("<b>No data</b>");
-        return;
-    }
-
-    let features_collection = {
-        type: "FeatureCollection",
-        features: []
-    };
-
-    // Drop points in a rectangular cell on a timeline
-    for (let k = 0; k < points_collection.length; k++) {
-        let data = points_collection[k];
-        let points = data.points;
-        for (let i = 0; i < points.length; i++) {
-            let point = points[i];
-            let dataString = `Coordinates: [${point.lat}, ${point.lng}]<br>Weight: ${point.alt} kg`;
-            let feature = {
-                type: "Feature",
-                geometry: {
-                    type: "Point",
-                    coordinates: [point.lng, point.lat]
-                },
-                properties: {
-                    start: data.start,
-                    end: data.end,
-                    color: "#000000",
-                    weight: 0,
-                    fillOpacity: 1,
-                    description: dataString,
-                    points: points,
-                    radius: log_normalized_radius(point.alt, weight_min - 1, weight_max, 5, 25)
-                }
-            };
-            features_collection.features.push(feature);
-        }
-    }
-    createTimeline(features_collection);
-    wasteMap.fitBounds([[bounds.getSouth() - 0.05, bounds.getWest() - 0.05], [bounds.getNorth() + 0.05, bounds.getEast() + 0.05]]);
-};
 
 function createTimeline(features) {
     if (features.features.length > 0) {
@@ -267,27 +137,19 @@ const visualize = isInit => {
 };
 
 const createLayers = (from, to, isPoints) => {
+    let filePath = "";
     if (isPoints) {
-        wasteMap.spin(true);
-        fetch("data/PlastOPol/database.csv")
-            .then(response => response.text())
-            .then(data => {
-                Papa.parse(data, {
-                    complete: function (results) {
-                        createPoints(results, from, to, interval)
-                        wasteMap.spin(false);
-                    }
-                });
-            });
+        filePath = "data/PlastOPol/plast_o_pol_data/points_data/points_" + from + "_" + to + "_" + interval + ".json";
     } else {
-        wasteMap.spin(true);
-        fetch("data/PlastOPol/plast_o_pol_data/plast_data/cells_" + from + "_" + to + "_" + interval + ".json")
-            .then(response => response.text())
-            .then(data => {
-                let features = JSON.parse(data);
-                createTimeline(features);
-                wasteMap.spin(false);
-            });
-        wasteMap.fitBounds([[lat_min - 0.05, lng_min - 0.05], [lat_max + 0.05, lng_max + 0.05]]);
+        filePath = "data/PlastOPol/plast_o_pol_data/plast_data/cells_" + from + "_" + to + "_" + interval + ".json";
     }
+    wasteMap.spin(true);
+    fetch(filePath)
+        .then(response => response.text())
+        .then(data => {
+            let features = JSON.parse(data);
+            createTimeline(features);
+            wasteMap.spin(false);
+        });
+    wasteMap.fitBounds([[lat_min - 0.05, lng_min - 0.05], [lat_max + 0.05, lng_max + 0.05]]);
 };
