@@ -207,7 +207,7 @@ const createCells = (results, cells, from, to, period) => {
         }
         let data_cells = {};
 
-        for (let i = 1; i < results.length; ++i) {
+        for (let i = 0; i < results.length; i++) {
             let date = moment(results[i].date);
             if (date > start_date && date <= end_date) {
                 let quantity = 0;
