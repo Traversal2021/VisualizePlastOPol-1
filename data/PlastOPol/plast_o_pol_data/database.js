@@ -62,24 +62,7 @@ const writeToFile = (features, fileName) => {
     // fs.writeFileSync(fileName, data);
 };
 
-const getDate = instance => {
-    return instance.format("YYYY-MM-DD HH:mm");
-};
-
-const getStartDate = (end, period) => {
-    if (period === WEEKLY) {
-        let year = moment(end).year();
-        end.startOf("isoWeek");
-        if (end.year() < year) {
-            end.add(1, "y").startOf("y");
-        }
-    } else if (period === MONTHLY) {
-        end.startOf("M");
-    } else {
-        end.startOf("y");
-    }
-    return getDate(end);
-};
+const getDate = instance => instance.format("YYYY-MM-DD HH:mm");
 
 const getTruncatedFloat = value => value.toString().match(/^-?\d+(?:\.\d{0,4})?/)[0];
 
@@ -117,12 +100,10 @@ const createCellFeatures = (cells_collection, end_of_data_date, period, weight_m
         let cells = cells_collection[k];
         for (let cell of Object.values(cells)) {
             if (cell !== null) {
-                let end = moment(cell.date);
-                let endDate = getDate(end);
-                if (end > end_of_data_date) { // Timeline upto last date of data collected
+                let end = cell.end;
+                if (moment(end) > end_of_data_date) { // Timeline upto last date of data collected
                     continue;
                 }
-                let startDate = getStartDate(end, period);
                 let value = normalized_rgb(cell.weight, weight_max, weight_min);
 
                 let bounds = cell.bounds;
@@ -146,8 +127,8 @@ const createCellFeatures = (cells_collection, end_of_data_date, period, weight_m
                     }
                 };
                 feature.properties = {
-                    start: startDate,
-                    end: endDate,
+                    start: cell.start,
+                    end: end,
                     color: "rgb(" + value + ", " + value + ", " + value + ")",
                     weight: 0,
                     fillOpacity: 0.85,
@@ -169,24 +150,28 @@ const getMaxMinWeights = data_cells => {
     return {max: Math.max(...all_weights), min: Math.min(...all_weights)};
 };
 
-const updateAllCells = (data_cells, pre_cells, cells, isNotFirst, end_date) => {
-    for (let i = 0; i < cells.length; i++) {
-        if (data_cells[i] === undefined) {
-            let quantity = 0;
-            let weight = 0;
-            if (isNotFirst) {
-                let pre_cell = pre_cells[i];
-                if (pre_cell !== null && pre_cell !== undefined) {
-                    quantity += pre_cell.quantity;
-                    weight += pre_cell.weight;
-                }
-            }
-            data_cells[i] = {
-                bounds: cells[i],
-                quantity: quantity,
-                weight: weight,
-                date: getDate(end_date)
-            }
+const createCell = (boundsId, cells, quantity, weight, start_date, end_date, isNotFirst, pre_data_cells) => {
+    if (isNotFirst) {
+        let preDataCell = pre_data_cells[boundsId];
+        if (preDataCell !== null && preDataCell !== undefined) {
+            quantity += preDataCell.quantity;
+            weight += preDataCell.weight;
+        }
+    }
+    return {
+        bounds: cells[boundsId],
+        quantity: quantity,
+        weight: weight,
+        start: getDate(start_date),
+        end: getDate(end_date)
+    };
+};
+
+const updateAllCells = (data_cells, pre_data_cells, cells, isNotFirst, start_date, end_date) => {
+    for (let i = 0; i < cells.length; i++) { /*TODO: change when cells is made a dict*/
+        let data_cell = data_cells[i];
+        if (data_cell === undefined) {
+            data_cells[i] = createCell(i, cells, 0, 0, start_date, end_date, isNotFirst, pre_data_cells);
         }
     }
 };
@@ -196,8 +181,7 @@ const createCells = (results, cells, from, to, period) => {
     let weight_max = null;
     let weight_min = null;
     let cells_collection = [];
-    let pre_cells = [];
-    let pre_cell = null;
+    let pre_data_cells = [];
     let timestamp = 0;
     let isNotFirst = false;
 
@@ -219,7 +203,7 @@ const createCells = (results, cells, from, to, period) => {
         }
 
         if (isNotFirst) {
-            pre_cells = cells_collection[timestamp - 1];
+            pre_data_cells = cells_collection[timestamp - 1];
         }
         let data_cells = {};
 
@@ -239,29 +223,16 @@ const createCells = (results, cells, from, to, period) => {
                 }
                 let data_cell = data_cells[boundsId];
                 if (data_cell === undefined) {
-                    if (isNotFirst) {
-                        pre_cell = pre_cells[boundsId];
-                        if (pre_cell !== null && pre_cell !== undefined) {
-                            quantity += pre_cell.quantity;
-                            weight += pre_cell.weight;
-                        }
-                    }
-                    data_cell = {
-                        bounds: cells[boundsId],
-                        quantity: quantity,
-                        weight: weight,
-                        date: getDate(end_date)
-                    };
-                    data_cells[boundsId] = data_cell;
+                    data_cells[boundsId] = createCell(boundsId, cells, quantity, weight, start_date, end_date, isNotFirst, pre_data_cells);
                 } else {
                     data_cell.weight += weight;
                     data_cell.quantity += quantity;
                 }
-                end_of_data_date = getDate(end_date); /*Added to include 0 value cells*/
+                end_of_data_date = moment(end_date); /*Added to include 0 value cells*/
             }
         }
         if (Object.keys(data_cells).length > 0 || isNotFirst) {
-            updateAllCells(data_cells, pre_cells, cells, isNotFirst, end_date);
+            updateAllCells(data_cells, pre_data_cells, cells, isNotFirst, start_date, end_date);
             let max_min_weights = getMaxMinWeights(data_cells);
             let maxWeight = max_min_weights.max;
             let minWeight = max_min_weights.min;
