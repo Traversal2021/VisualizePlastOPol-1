@@ -17,7 +17,7 @@ function allowLoading() { // Source: File API
     L.control.custom({
         position: 'topleft',
         content: '<b>Type:</b><input type="radio" id="points" name="type" value="points" checked><label for="points">Points</label>' +
-            '<input type="radio" id="cells" name="type" value="cells"><label for="cells">Cells</label>',
+            '<input type="radio" id="grid" name="type" value="grid"><label for="grid">Grid</label>',
         events:
             {
                 change: event => {
@@ -87,6 +87,7 @@ function createTimeline(features) {
                 color: feature.properties.color,
                 weight: feature.properties.weight,
                 fillOpacity: 0.5
+                // fillOpacity: feature.properties.fillOpacity
             }),
             onEachFeature: (feature, layer) => {
                 layer.bindPopup(layer.feature.properties.description);
