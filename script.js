@@ -54,7 +54,8 @@ function allowLoading() { // Source: File API
 }
 
 const fill_options = select => {
-    let max = moment().year();
+    //let max = moment().year();
+    let max = 2020;
     for (let i = MIN_YEAR; i <= max; i++) {
         const opt = document.createElement("option");
         opt.value = i;
