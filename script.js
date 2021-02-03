@@ -116,7 +116,8 @@ const log_normalized_radius = (enteredValue, minEntry, maxEntry, normalizedMin, 
 };
 
 const visualize = isInit => {
-    let from = moment().year();
+    // let from = moment().year();
+    let from = 2020;
     let to = from;
     let isPoints = false;
     if (!isInit) {
