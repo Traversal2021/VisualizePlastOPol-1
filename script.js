@@ -235,7 +235,7 @@ const createPredictionLayers = (from, to, isPredicted, isPoints,category_check) 
         if(!isPredicted &&category_check == "Fishery"){
             filePath = "data/PlastOPol/plastOPol_data/cells_data/Fish/cells_" + from + "_" + to + "_" + interval + ".json";
         }
-
+ 
         if(isPredicted && category_check == "All"){
             filePath = "data/PlastOPol/plastOPol_data/prediction_cell/All/cells_" + from + "_" + to + "_" + interval + ".json";
         }
