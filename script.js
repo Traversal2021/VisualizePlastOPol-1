@@ -230,20 +230,20 @@ const createPredictionLayers = (from, to, isPredicted, isPoints,category_check) 
     filePath = "data/PlastOPol/plastOPol_data/plast_data/cells_" + from + "_" + to + "_" + interval + ".json";
     if (!isPoints) {
         if(!isPredicted &&category_check == "All"){
-            filePath = "data/PlastOPol/plastOPol_data/cells_data/All/points_" + from + "_" + to + "_" + interval + ".json";
+            filePath = "data/PlastOPol/plastOPol_data/cells_data/All/cells_" + from + "_" + to + "_" + interval + ".json";
         }
         if(!isPredicted &&category_check == "Fishery"){
-            filePath = "data/PlastOPol/plastOPol_data/cells_data/Fish/points_" + from + "_" + to + "_" + interval + ".json";
+            filePath = "data/PlastOPol/plastOPol_data/cells_data/Fish/cells_" + from + "_" + to + "_" + interval + ".json";
         }
 
         if(isPredicted && category_check == "All"){
-            filePath = "data/PlastOPol/plastOPol_data/prediction_data/All/points_" + from + "_" + to + "_" + interval + ".json";
+            filePath = "data/PlastOPol/plastOPol_data/prediction_cell/All/cells_" + from + "_" + to + "_" + interval + ".json";
         }
         if(isPredicted && category_check == "Fishery"){
-            filePath = "data/PlastOPol/plastOPol_data/prediction_data/Fish/points_" + from + "_" + to + "_" + interval + ".json";
+            filePath = "data/PlastOPol/plastOPol_data/prediction_cell/Fish/cells_" + from + "_" + to + "_" + interval + ".json";
         }
 
-        filePath = "data/PlastOPol/plastOPol_data/points_data/All/points_" + from + "_" + to + "_" + interval + ".json";
+        //filePath = "data/PlastOPol/plastOPol_data/points_data/All/points_" + from + "_" + to + "_" + interval + ".json";
     }
     else {
         if(isPredicted && category_check == "All"){
