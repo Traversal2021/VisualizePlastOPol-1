@@ -210,9 +210,9 @@ const visualize = isInit => {
 const createLayers = (from, to, isPoints) => {
     let filePath = "";
     if (isPoints) {
-        filePath = "data/PlastOPol/plast_o_pol_data/points_data/points_" + from + "_" + to + "_" + interval + ".json";
+        filePath = "data/PlastOPol/plastOPol_data/points_data/All/points_" + from + "_" + to + "_" + interval + ".json";
     } else {
-        filePath = "data/PlastOPol/plast_o_pol_data/plast_data/cells_" + from + "_" + to + "_" + interval + ".json";
+        filePath = "data/PlastOPol/plastOPol_data/plast_data/cells_" + from + "_" + to + "_" + interval + ".json";
     }
     wasteMap.spin(true);
     fetch(filePath)
@@ -227,10 +227,10 @@ const createLayers = (from, to, isPoints) => {
 
 const createPredictionLayers = (from, to, isPredicted, isPoints,category_check) => {
     let filePath = "";
-    filePath = "data/PlastOPol/plast_o_pol_data/pred_data/cells_" + from + "_" + to + "_" + interval + ".json";
-    // if (!isPoints) {
-    //     filePath = "data/PlastOPol/plast_o_pol_data/points_data/points_" + from + "_" + to + "_" + interval + ".json";
-    // }
+    filePath = "data/PlastOPol/plastOPol_data/plast_data/cells_" + from + "_" + to + "_" + interval + ".json";
+    if (!isPoints) {
+        filePath = "data/PlastOPol/plastOPol_data/points_data/All/points_" + from + "_" + to + "_" + interval + ".json";
+    }
     // else {
     //     filePath = "data/PlastOPol/plast_o_pol_data/plast_data/cells_" + from + "_" + to + "_" + interval + ".json";
     // }
@@ -262,7 +262,8 @@ const createPredictionLayers = (from, to, isPredicted, isPoints,category_check) 
         .then(response => response.text())
         .then(data => {
             console.log(filePath);
-            let features = JSON.parse(data.trim());
+            let features = JSON.parse(data);
+            console.log(data);
             createTimeline(features);
             wasteMap.spin(false);
         });
