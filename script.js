@@ -241,16 +241,16 @@ const createPredictionLayers = (from, to, isPredicted, isPoints,category_check) 
     //     filePath = "data/PlastOPol/plast_o_pol_data/pred_data/cells_" + from + "_" + to + "_" + interval + ".json";
     // }
     if (isPoints) {
-        if(!isPredicted && category_check == "All"){
+        if(isPredicted && category_check == "All"){
             filePath = "data/PlastOPol/plastOPol_data/points_data/All/points_" + from + "_" + to + "_" + interval + ".json";
         }
-        if(!isPredicted && category_check == "Fishery"){
+        if(isPredicted && category_check == "Fishery"){
             filePath = "data/PlastOPol/plastOPol_data/points_data/fish/points_" + from + "_" + to + "_" + interval + "_fish.json";
         }
-        if(isPredicted &&category_check == "All"){
+        if(!isPredicted &&category_check == "All"){
             filePath = "data/PlastOPol/plastOPol_data/prediction_data/All/points_" + from + "_" + to + "_" + interval + ".json";
         }
-        if(isPredicted &&category_check == "Fishery"){
+        if(!isPredicted &&category_check == "Fishery"){
             filePath = "data/PlastOPol/plastOPol_data/prediction_data/Fish/points_" + from + "_" + to + "_" + interval + "_fish.json";
         }
         
