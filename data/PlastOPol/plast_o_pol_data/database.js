@@ -1,4 +1,4 @@
-const filePath = "../cells_database.csv";
+const filePath = "../database_fishing_complete.csv";
 const cellsPath = "../cells.csv";
 const moment = require("moment");
 const fs = require("fs");
@@ -263,11 +263,11 @@ const createCells = (results, cells, from, to, period) => {
     }
     let features_collection = createCellFeatures(cells_collection, end_of_data_date, period, weight_max, weight_min);
 
-    let dir_path = "plast_data/";
+    let dir_path = "fish_data/";
     fs.mkdir(dir_path, {recursive: true}, (err) => {
         if (err) throw err;
     });
-    writeToFile(features_collection, dir_path + "cells_" + from + "_" + to + "_" + period + ".json");
+    writeToFile(features_collection, dir_path + "cells_" + from + "_" + to + "_" + period + "_fish.json");
 };
 
 const preComputeData = (results, cells) => {

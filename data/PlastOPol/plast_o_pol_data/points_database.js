@@ -1,5 +1,5 @@
 const utils = require("./utils");
-const filePath = "../database.csv";
+const filePath = "../database_fishing_complete.csv";
 const moment = require("moment");
 const lat_min = 62.345252708439276, lat_max = 62.61474729156072, lng_min = 5.978375939307136,
     lng_max = 6.561624060692863; //Svinøya 30x30
@@ -114,9 +114,9 @@ const createPoints = (results, from, to, period) => {
 
     let features = createPointFeatures(points_collection, period, weight_max, weight_min);
 
-    let dir_path = "points_data/";
+    let dir_path = "fish_data/";
     utils.createDirectory(dir_path);
-    utils.writeJSONToFile(features, dir_path + "points_" + from + "_" + to + "_" + period + ".json");
+    utils.writeJSONToFile(features, dir_path + "points_" + from + "_" + to + "_" + period + "_fish.json");
 };
 
 const preComputePointsData = results => {
