@@ -56,8 +56,8 @@ function allowLoading() { // Source: File API
 
     L.control.custom({
         position: 'topleft',
-        content: '<b>Prediction:</b><input type="radio" id="prediction_on" name="type2" value="prediction_on" checked><label for="prediction_on">On</label>' +
-            '<input type="radio" id="prediction_off" name="type2" value="prediction_off"><label for="prediction_off">Off</label>',
+        content: '<b>Prediction:</b><input type="radio" id="prediction_on" name="type2" value="prediction_on" ><label for="prediction_on">On</label>' +
+            '<input type="radio" id="prediction_off" name="type2" value="prediction_off" checked><label for="prediction_off">Off</label>',
         events:
         {
             change: event => {
@@ -88,7 +88,7 @@ function allowLoading() { // Source: File API
 
 const fill_options = select => {
     //let max = moment().year();
-    let max = 2022;
+    let max = 2021;
     for (let i = MIN_YEAR; i <= max; i++) {
         const opt = document.createElement("option");
         opt.value = i;
