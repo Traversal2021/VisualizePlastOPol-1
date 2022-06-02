@@ -1,7 +1,7 @@
 document.addEventListener("DOMContentLoaded", allowLoading, false);
 
 const WEEKLY = "Weekly", MONTHLY = "Monthly", YEARLY = "Yearly";
-const MIN_YEAR = 2020;
+const MIN_YEAR = 2013;
 const lat_min = 62.345252708439276, lat_max = 62.61474729156072, lng_min = 5.978375939307136,
     lng_max = 6.561624060692863; //Svinøya 30x30
 
@@ -61,7 +61,7 @@ function allowLoading() { // Source: File API
         events:
         {
             change: event => {
-                console.log(event);
+               
                 visualize(false);
             },
         }
@@ -196,6 +196,7 @@ const visualize = isInit => {
         isPoints = points !== null && points.checked;
 
         let prediction_check = document.getElementById('prediction_on');
+        if (points.checked == true){prediction_check.checked = false;}
         isPredicted = prediction_check !== null && prediction_check.checked;
 
         category_check = document.getElementById('category').value;
@@ -208,6 +209,7 @@ const visualize = isInit => {
 };
 
 const createLayers = (from, to, isPoints) => {
+
     let filePath = "";
     if (isPoints) {
         filePath = "data/PlastOPol/plastOPol_data/points_data/All/points_" + from + "_" + to + "_" + interval + ".json";
@@ -226,6 +228,15 @@ const createLayers = (from, to, isPoints) => {
 };
 
 const createPredictionLayers = (from, to, isPredicted, isPoints,category_check) => {
+    // let pointButton = document.getElementById("points");
+    // let predictionOffButton = document.getElementById("prediction_off");
+    // let predictionOnButton = document.getElementById("prediction_on");
+    // console.log(pointButton);
+    // if (pointButton.checked == true){
+    //     predictionOffButton.checked = true;
+    //     predictionOnButton.checked = false;
+    // }
+
     let filePath = "";
     filePath = "data/PlastOPol/plastOPol_data/plast_data/cells_" + from + "_" + to + "_" + interval + ".json";
     if (!isPoints) {
@@ -246,10 +257,10 @@ const createPredictionLayers = (from, to, isPredicted, isPoints,category_check) 
         //filePath = "data/PlastOPol/plastOPol_data/points_data/All/points_" + from + "_" + to + "_" + interval + ".json";
     }
     else {
-        if(isPredicted && category_check == "All"){
+        if(category_check == "All"){
             filePath = "data/PlastOPol/plastOPol_data/points_data/All/points_" + from + "_" + to + "_" + interval + ".json";
         }
-        if(isPredicted && category_check == "Fishery"){
+        if(category_check == "Fishery"){
             filePath = "data/PlastOPol/plastOPol_data/points_data/fish/points_" + from + "_" + to + "_" + interval + "_fish.json";
         }
         
