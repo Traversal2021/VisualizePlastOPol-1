@@ -1,7 +1,7 @@
 document.addEventListener("DOMContentLoaded", allowLoading, false);
 
 const WEEKLY = "Weekly", MONTHLY = "Monthly", YEARLY = "Yearly";
-const MIN_YEAR = 2013;
+const MIN_YEAR = 2013; 
 const lat_min = 62.345252708439276, lat_max = 62.61474729156072, lng_min = 5.978375939307136,
     lng_max = 6.561624060692863; //Svinøya 30x30
 
